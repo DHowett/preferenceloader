@@ -69,15 +69,15 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 				NSString *bundleName = [entry objectForKey:@"bundle"];
 				NSString *bundlePath = [entry objectForKey:@"bundlePath"];
 
-				// Second Try
+				// Second Try (bundlePath key failed)
 				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
 					bundlePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", bundleName];
 
-				// Third Try
+				// Third Try (/Library failed)
 				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
 					bundlePath = [NSString stringWithFormat:@"/System/Library/PreferenceBundles/%@.bundle", bundleName];
 
-				// Really?
+				// Really? (/System/Library failed...)
 				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
 					NSLog(@"Discarding specifier for missing isController bundle %@.", bundleName);
 					continue;
