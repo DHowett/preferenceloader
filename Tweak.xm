@@ -50,10 +50,9 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
 	id orig = %orig;
 	if(first) {
-		NSArray *plists;
-		plists = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
-		if([plists count] > 0) [orig addObject:[PSSpecifier emptyGroupSpecifier]];
-		for(NSString *item in plists) {
+		NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
+		if([subpaths count] > 0) [orig addObject:[PSSpecifier emptyGroupSpecifier]];
+		for(NSString *item in subpaths) {
 			if(![[item pathExtension] isEqualToString:@"plist"]) continue;
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
 			NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
