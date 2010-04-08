@@ -1,37 +1,3 @@
-/* How to Hook with Logos
-Hooks are written with syntax similar to that of an Objective-C @implementation.
-You don't need to #include <substrate.h>, it will be done automatically, as will
-the generation of a class list and an automatic constructor.
-
-%hook ClassName
-
-// Hooking a class method
-+ (id)sharedInstance {
-	return %orig;
-}
-
-// Hooking an instance method with an argument.
-- (void)messageName:(int)argument {
-	%log; // Write a message about this call, including its class, name and arguments, to the system log.
-
-	%orig; // Call through to the original function with its original arguments.
-	%orig(nil); // Call through to the original function with a custom argument.
-
-	// If you use %orig(), you MUST supply all arguments (except for self and _cmd, the automatically generated ones.)
-}
-
-// Hooking an instance method with no arguments.
-- (id)noArguments {
-	%log;
-	id awesome = %orig;
-	[awesome doSomethingElse];
-
-	return awesome;
-}
-
-// Always make sure you clean up after yourself; Not doing so could have grave conseqeuences!
-%end
-*/
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSListController.h>
 
@@ -44,27 +10,6 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 					NSString** pSpecifierID,
 					PSListController* callerList,
 					NSMutableArray** pBundleControllers);
-
-/*
-#define logarg(x) NSLog(@"%s: %@", #x, x);
-NSArray *(*_SpecifiersFromPlist)(NSDictionary* plist, PSSpecifier* prevSpec, id target, NSString* plistName, NSBundle* curBundle, NSString** pTitle, NSString** pSpecifierID, PSListController* callerList, NSMutableArray** pBundleControllers);
-NSArray* $SpecifiersFromPlist(NSDictionary* plist, PSSpecifier* prevSpec, id target, NSString* plistName, NSBundle* curBundle, NSString** pTitle, NSString** pSpecifierID, PSListController* callerList, NSMutableArray** pBundleControllers) {
-	NSLog(@"SpecifiersFromPlist");
-	logarg(plist);
-	logarg(prevSpec);
-	logarg(target);
-	logarg(plistName);
-	logarg(curBundle);
-	if(pTitle)
-		logarg(*pTitle);
-	if(pSpecifierID)
-		logarg(*pSpecifierID);
-	logarg(callerList);
-	if(pBundleControllers)
-		logarg(*pBundleControllers);
-	return _SpecifiersFromPlist(plist, prevSpec, target, plistName, curBundle, pTitle, pSpecifierID, callerList, pBundleControllers);
-}
-*/
 
 @interface PLCustomListController: PSListController { }
 @end
