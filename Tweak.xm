@@ -48,7 +48,6 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 %hook PrefsListController
 - (id)specifiers {
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
-	%log;
 	id orig = %orig;
 	if(first) {
 		NSArray *plists;
