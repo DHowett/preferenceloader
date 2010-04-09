@@ -68,10 +68,9 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 			BOOL isLocalizedBundle = ![[[fullPath stringByDeletingLastPathComponent] lastPathComponent] isEqualToString:@"Preferences"];
 
 			NSBundle *prefBundle;
+			NSString *bundleName = [entry objectForKey:@"bundle"];
+			NSString *bundlePath = [entry objectForKey:@"bundlePath"];
 			if(isController) {
-				NSString *bundleName = [entry objectForKey:@"bundle"];
-				NSString *bundlePath = [entry objectForKey:@"bundlePath"];
-
 				// Second Try (bundlePath key failed)
 				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
 					bundlePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", bundleName];
@@ -92,7 +91,9 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 			}
 			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
 			PSSpecifier *specifier = [specs objectAtIndex:0];
-			if(!isController) {
+			if(isController) {
+				[specifier setProperty:bundlePath forKey:@"lazy-bundle"];
+			} else {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
 				//[(PSSpecifier*)[specs objectAtIndex:0] setProperty:[NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item] forKey:@"pl_plist"];
 				[specifier setProperty:prefBundle forKey:@"pl_bundle"];
