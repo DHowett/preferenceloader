@@ -46,17 +46,33 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 @end
 
 %hook PrefsListController
+static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
+
+%group iPad
+- (NSString *)tableView:(id)view titleForHeaderInSection:(int)section {
+	if([_loadedSpecifiers count] == 0) return %orig;
+	int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
+	if(section == groupCount - 2) return @"Extensions";
+	return %orig;
+}
+
+- (float)tableView:(id)view heightForHeaderInSection:(int)section {
+	if([_loadedSpecifiers count] == 0) return %orig;
+	int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
+	if(section == groupCount - 2) return 22.0f;
+	return %orig;
+}
+%end
+
 - (id)specifiers {
+
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
 	if(first) {
 		%orig;
 		int group, row;
 		[self getGroup:&group row:&row ofSpecifier:[self specifierForID:@"General"]];
-		NSMutableArray *newSpecs = [[NSMutableArray alloc] init];
-		//NSLog(@"General is in group %d row %d.", group, row);
 
 		NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
-		if([subpaths count] > 0) [newSpecs addObject:[PSSpecifier emptyGroupSpecifier]];
 		for(NSString *item in subpaths) {
 			if(![[item pathExtension] isEqualToString:@"plist"]) continue;
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
@@ -95,18 +111,20 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 				[specifier setProperty:bundlePath forKey:@"lazy-bundle"];
 			} else {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
-				//[(PSSpecifier*)[specs objectAtIndex:0] setProperty:[NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item] forKey:@"pl_plist"];
 				[specifier setProperty:prefBundle forKey:@"pl_bundle"];
 			}
 			[specifier setProperty:[NSNumber numberWithBool:1] forKey:@"useEtched"];
-			//NSLog(@"Got %@", [[specs objectAtIndex:0] properties]);
-			[newSpecs addObject:specifier];
+			[_loadedSpecifiers addObject:specifier];
 		}
-		[self insertContiguousSpecifiers:newSpecs atEndOfGroup:group];
-		[newSpecs release];
+		[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
+		[self insertContiguousSpecifiers:_loadedSpecifiers atEndOfGroup:group+1];
 	}
-	//MSHookIvar<id>(self, "_specifiers") = orig;
 	return MSHookIvar<id>(self, "_specifiers");
-	//return orig;
 }
 %end
+
+__attribute__((constructor)) static void _plInit() {
+	%init;
+	if([UIDevice instancesRespondToSelector:@selector(isWildcat)])
+		%init(iPad);
+}
