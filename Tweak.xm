@@ -144,8 +144,10 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 
 		[_loadedSpecifiers sortUsingFunction:&PSSpecifierSort context:NULL];
 
-		[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
-		[self insertContiguousSpecifiers:_loadedSpecifiers atEndOfGroup:group+1];
+		if([_loadedSpecifiers count] > 0) {
+			[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
+			[self insertContiguousSpecifiers:_loadedSpecifiers atEndOfGroup:group+1];
+		}
 	}
 	return MSHookIvar<id>(self, "_specifiers");
 }
