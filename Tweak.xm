@@ -85,7 +85,7 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 			} else {
 				prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
 			}
-			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, &MSHookIvar<NSMutableArray *>(self, "_bundleControllers"));
+			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
 			PSSpecifier *specifier = [specs objectAtIndex:0];
 			if(!isController) {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
