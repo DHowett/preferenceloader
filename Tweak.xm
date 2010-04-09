@@ -1,6 +1,8 @@
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSListController.h>
+#import "PSKeys.h"
 
+/* {{{ Imports (Preferences.framework) */
 extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 					PSSpecifier* prevSpec,
 					id target,
@@ -11,6 +13,17 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 					PSListController* callerList,
 					NSMutableArray** pBundleControllers);
 
+// Weak (3.2+, dlsym)
+static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
+/* }}} */
+
+/* {{{ UIDevice 3.2 Additions */
+@interface UIDevice (iPad)
+- (BOOL)isWildcat;
+@end
+/* }}} */
+
+/* {{{ Preferences Controllers */
 @interface PLCustomListController: PSListController { }
 @end
 @implementation PLCustomListController
@@ -44,16 +57,21 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 	return _specifiers;
 }
 @end
+/* }}} */
 
+/* {{{ Helper Functions */
 static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context) {
 	NSString *string1 = [a1 name];
 	NSString *string2 = [a2 name];
 	return [string1 localizedCaseInsensitiveCompare:string2];
 }
+/* }}} */
 
+/* {{{ Hooks */
 %hook PrefsListController
 static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 
+/* {{{ iPad Hooks */
 %group iPad
 - (NSString *)tableView:(id)view titleForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
@@ -69,6 +87,7 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 	return %orig;
 }
 %end
+/* }}} */
 
 - (id)specifiers {
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
@@ -113,12 +132,13 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
 			PSSpecifier *specifier = [specs objectAtIndex:0];
 			if(isController) {
-				[specifier setProperty:bundlePath forKey:@"lazy-bundle"];
+				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
 			} else {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
 				[specifier setProperty:prefBundle forKey:@"pl_bundle"];
 			}
-			[specifier setProperty:[NSNumber numberWithBool:1] forKey:@"useEtched"];
+			if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
+				[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
 			[_loadedSpecifiers addObject:specifier];
 		}
 
@@ -130,9 +150,16 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 	return MSHookIvar<id>(self, "_specifiers");
 }
 %end
+/* }}} */
 
 __attribute__((constructor)) static void _plInit() {
 	%init;
 	if([UIDevice instancesRespondToSelector:@selector(isWildcat)])
 		%init(iPad);
+
+	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
+	if(preferencesHandle) {
+		pPSTableCellUseEtchedAppearanceKey = (NSString **)dlsym(preferencesHandle, "PSTableCellUseEtchedAppearanceKey");
+		dlclose(preferencesHandle);
+	}
 }
