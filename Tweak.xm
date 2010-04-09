@@ -48,10 +48,15 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 %hook PrefsListController
 - (id)specifiers {
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
-	id orig = %orig;
 	if(first) {
+		%orig;
+		int group, row;
+		[self getGroup:&group row:&row ofSpecifier:[self specifierForID:@"General"]];
+		NSMutableArray *newSpecs = [[NSMutableArray alloc] init];
+		//NSLog(@"General is in group %d row %d.", group, row);
+
 		NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
-		if([subpaths count] > 0) [orig addObject:[PSSpecifier emptyGroupSpecifier]];
+		if([subpaths count] > 0) [newSpecs addObject:[PSSpecifier emptyGroupSpecifier]];
 		for(NSString *item in subpaths) {
 			if(![[item pathExtension] isEqualToString:@"plist"]) continue;
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
@@ -94,10 +99,13 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 			}
 			[specifier setProperty:[NSNumber numberWithBool:1] forKey:@"useEtched"];
 			//NSLog(@"Got %@", [[specs objectAtIndex:0] properties]);
-			[orig addObjectsFromArray:specs];
+			[newSpecs addObject:specifier];
 		}
+		[self insertContiguousSpecifiers:newSpecs atEndOfGroup:group];
+		[newSpecs release];
 	}
-	MSHookIvar<id>(self, "_specifiers") = orig;
-	return orig;
+	//MSHookIvar<id>(self, "_specifiers") = orig;
+	return MSHookIvar<id>(self, "_specifiers");
+	//return orig;
 }
 %end
