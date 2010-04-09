@@ -45,6 +45,12 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 }
 @end
 
+static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context) {
+	NSString *string1 = [a1 name];
+	NSString *string2 = [a2 name];
+	return [string1 localizedCaseInsensitiveCompare:string2];
+}
+
 %hook PrefsListController
 static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 
@@ -65,7 +71,6 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 %end
 
 - (id)specifiers {
-
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
 	if(first) {
 		%orig;
@@ -116,6 +121,9 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 			[specifier setProperty:[NSNumber numberWithBool:1] forKey:@"useEtched"];
 			[_loadedSpecifiers addObject:specifier];
 		}
+
+		[_loadedSpecifiers sortUsingFunction:&PSSpecifierSort context:NULL];
+
 		[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
 		[self insertContiguousSpecifiers:_loadedSpecifiers atEndOfGroup:group+1];
 	}
