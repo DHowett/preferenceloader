@@ -1,5 +1,6 @@
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSListController.h>
+#import <Preferences/PSTableCell.h>
 #import "PSKeys.h"
 
 /* {{{ Imports (Preferences.framework) */
@@ -15,6 +16,7 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 
 // Weak (3.2+, dlsym)
 static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
+static NSString **pPSFooterTextGroupKey = NULL;
 /* }}} */
 
 /* {{{ UIDevice 3.2 Additions */
@@ -32,11 +34,39 @@ static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
 }
 @end
 
+@interface PLFailedBundleListController: PSListController { }
+@end
+@implementation PLFailedBundleListController
+- (id)navigationTitle {
+	return @"Error";
+}
+
+- (id)specifiers {
+	if(!_specifiers) {
+		NSString *const errorText = [NSString stringWithFormat:@"There was an error loading the preference bundle for %@.", [[self specifier] name]];
+		NSMutableArray *newSpecifiers = [[NSMutableArray alloc] init];
+		if(pPSFooterTextGroupKey) {
+			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+			[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
+			[newSpecifiers addObject:spec];
+		} else {
+			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+			[spec setProperty:[NSNumber numberWithBool:YES] forKey:PSStaticTextGroupKey];
+			[newSpecifiers addObject:spec];
+			spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
+			[newSpecifiers addObject:spec];
+		}
+		_specifiers = newSpecifiers;
+	}
+	return _specifiers;
+}
+@end
+
 @interface PLLocalizedListController: PLCustomListController { }
 @end
 @implementation PLLocalizedListController
-- (id)title {
-	return [[self bundle] localizedStringForKey:[super title] value:[super title] table:nil];
+- (id)navigationTitle {
+	return [[self bundle] localizedStringForKey:[super navigationTitle] value:[super navigationTitle] table:nil];
 }
 
 - (id)specifiers {
@@ -68,6 +98,22 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 /* }}} */
 
 /* {{{ Hooks */
+%hook PrefsRootController
+- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
+	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
+	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
+		NSLog(@"Failed to load PreferenceBundle at %@.", bundlePath);
+		MSHookIvar<Class>(specifier, "detailControllerClass") = [PLFailedBundleListController class];
+		[specifier removePropertyForKey:PSBundleIsControllerKey];
+		[specifier removePropertyForKey:PSActionKey];
+		[specifier removePropertyForKey:PSBundlePathKey];
+		[specifier removePropertyForKey:PSLazilyLoadedBundleKey];
+	}
+	[bundlePath release];
+}
+%end
+
 %hook PrefsListController
 static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 
@@ -162,6 +208,7 @@ __attribute__((constructor)) static void _plInit() {
 	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
 	if(preferencesHandle) {
 		pPSTableCellUseEtchedAppearanceKey = (NSString **)dlsym(preferencesHandle, "PSTableCellUseEtchedAppearanceKey");
+		pPSFooterTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSFooterTextGroupKey");
 		dlclose(preferencesHandle);
 	}
 }
