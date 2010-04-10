@@ -1,5 +1,6 @@
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSListController.h>
+#import <Preferences/PSBundleController.h>
 #import <Preferences/PSTableCell.h>
 #import "PSKeys.h"
 
@@ -189,6 +190,8 @@ static NSMutableArray *_loadedSpecifiers = nil;
 				NSBundle *prefBundle;
 				NSString *bundleName = [entry objectForKey:@"bundle"];
 				NSString *bundlePath = [entry objectForKey:@"bundlePath"];
+				NSArray *bundleControllers = [[NSArray alloc] init];
+
 				if(isBundle) {
 					// Second Try (bundlePath key failed)
 					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
@@ -208,12 +211,27 @@ static NSMutableArray *_loadedSpecifiers = nil;
 				} else {
 					prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
 				}
-				NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
+
+				NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
+
+				// If there are any PSBundleControllers, add them to our list.
+				if(bundleControllers) {
+					[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
+					[bundleControllers release];
+				}
+
 				if([specs count] == 0) continue;
-				PSSpecifier *specifier = [specs objectAtIndex:0];
+
 				if(isBundle) {
-					[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
+					 // Only set lazy-bundle for isController specifiers.
+					if([[entry objectForKey:@"isController"] boolValue]) {
+						for(PSSpecifier *specifier in specs) {
+							[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
+						}
+					}
 				} else {
+					// There really should only be one specifier.
+					PSSpecifier *specifier = [specs objectAtIndex:0];
 					MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
 					[specifier setProperty:prefBundle forKey:PLBundleKey];
 
@@ -222,9 +240,15 @@ static NSMutableArray *_loadedSpecifiers = nil;
 						[specifier setProperty:plistName forKey:PLAlternatePlistNameKey];
 					}
 				}
+
+				// But it's possible for there to be more than one with an isController == 0 (PSBundleController) bundle.
+				// so, set all the specifiers to etched mode (if necessary).
 				if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
-					[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
-				[_loadedSpecifiers addObject:specifier];
+					for(PSSpecifier *specifier in specs) {
+						[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
+					}
+
+				[_loadedSpecifiers addObjectsFromArray:specs];
 			}
 
 			[_loadedSpecifiers sortUsingFunction:&PSSpecifierSort context:NULL];
