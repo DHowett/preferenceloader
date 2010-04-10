@@ -32,6 +32,17 @@ static NSString **pPSFooterTextGroupKey = NULL;
 - (id)bundle {
 	return [[self specifier] propertyForKey:@"pl_bundle"];
 }
+
+- (id)specifiers {
+	if(!_specifiers) {
+		NSString *alternatePlistName = [[self specifier] propertyForKey:@"pl_plist_name"];
+		if(alternatePlistName)
+			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
+		else
+			_specifiers = [super specifiers];
+	}
+	return _specifiers;
+}
 @end
 
 @interface PLFailedBundleListController: PSListController { }
@@ -185,6 +196,12 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 			} else {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
 				[specifier setProperty:prefBundle forKey:@"pl_bundle"];
+
+				NSString *plistName = [[fullPath stringByDeletingPathExtension] lastPathComponent];
+				if(![[specifier propertyForKey:PSTitleKey] isEqualToString:plistName]) {
+					NSLog(@"Overriding %@ in favour of %@.", [specifier propertyForKey:PSTitleKey], plistName);
+					[specifier setProperty:plistName forKey:@"pl_plist_name"];
+				}
 			}
 			if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 				[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
