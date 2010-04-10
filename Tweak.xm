@@ -178,6 +178,7 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 				prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
 			}
 			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
+			if([specs count] == 0) continue;
 			PSSpecifier *specifier = [specs objectAtIndex:0];
 			if(isController) {
 				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
