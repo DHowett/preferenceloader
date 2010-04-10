@@ -50,6 +50,32 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 }
 @end
 
+@interface PLLocalizedListController: PLCustomListController { }
+@end
+@implementation PLLocalizedListController
+- (id)navigationTitle {
+	return [[self bundle] localizedStringForKey:[super navigationTitle] value:[super navigationTitle] table:nil];
+}
+
+- (id)specifiers {
+	if(!_specifiers) {
+		_specifiers = [super specifiers];
+		for(PSSpecifier *spec in _specifiers) {
+			if([spec name]) [spec setName:[[self bundle] localizedStringForKey:[spec name] value:[spec name] table:nil]];
+			if([spec titleDictionary]) {
+				NSMutableDictionary *newTitles = [NSMutableDictionary dictionary];
+				for(NSString *key in [spec titleDictionary]) {
+					NSString *value = [[spec titleDictionary] objectForKey:key];
+					[newTitles setObject:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:key];
+				}
+				[spec setTitleDictionary:newTitles];
+			}
+		}
+	}
+	return _specifiers;
+}
+@end
+
 @interface PLFailedBundleListController: PSListController { }
 @end
 @implementation PLFailedBundleListController
@@ -73,32 +99,6 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 			[newSpecifiers addObject:spec];
 		}
 		_specifiers = newSpecifiers;
-	}
-	return _specifiers;
-}
-@end
-
-@interface PLLocalizedListController: PLCustomListController { }
-@end
-@implementation PLLocalizedListController
-- (id)navigationTitle {
-	return [[self bundle] localizedStringForKey:[super navigationTitle] value:[super navigationTitle] table:nil];
-}
-
-- (id)specifiers {
-	if(!_specifiers) {
-		_specifiers = [super specifiers];
-		for(PSSpecifier *spec in _specifiers) {
-			if([spec name]) [spec setName:[[self bundle] localizedStringForKey:[spec name] value:[spec name] table:nil]];
-			if([spec titleDictionary]) {
-				NSMutableDictionary *newTitles = [NSMutableDictionary dictionary];
-				for(NSString *key in [spec titleDictionary]) {
-					NSString *value = [[spec titleDictionary] objectForKey:key];
-					[newTitles setObject:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:key];
-				}
-				[spec setTitleDictionary:newTitles];
-			}
-		}
 	}
 	return _specifiers;
 }
