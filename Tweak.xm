@@ -131,7 +131,7 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 %end
 
 %hook PrefsListController
-static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
+static NSMutableArray *_loadedSpecifiers = nil;
 
 /* {{{ iPad Hooks */
 %group iPad
@@ -158,61 +158,64 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 		int group, row;
 		[self getGroup:&group row:&row ofSpecifier:[self specifierForID:@"General"]];
 
-		NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
-		for(NSString *item in subpaths) {
-			if(![[item pathExtension] isEqualToString:@"plist"]) continue;
-			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
-			NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
-			NSDictionary *entry = [plPlist objectForKey:@"entry"];
-			if(!entry) continue;
+		if(!_loadedSpecifiers) {
+			_loadedSpecifiers = [[NSMutableArray alloc] init];
+			NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
+			for(NSString *item in subpaths) {
+				if(![[item pathExtension] isEqualToString:@"plist"]) continue;
+				NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
+				NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
+				NSDictionary *entry = [plPlist objectForKey:@"entry"];
+				if(!entry) continue;
 
-			NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
+				NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
 
-			BOOL isController = [[entry objectForKey:@"isController"] boolValue];
-			BOOL isLocalizedBundle = ![[[fullPath stringByDeletingLastPathComponent] lastPathComponent] isEqualToString:@"Preferences"];
+				BOOL isController = [[entry objectForKey:@"isController"] boolValue];
+				BOOL isLocalizedBundle = ![[[fullPath stringByDeletingLastPathComponent] lastPathComponent] isEqualToString:@"Preferences"];
 
-			NSBundle *prefBundle;
-			NSString *bundleName = [entry objectForKey:@"bundle"];
-			NSString *bundlePath = [entry objectForKey:@"bundlePath"];
-			if(isController) {
-				// Second Try (bundlePath key failed)
-				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
-					bundlePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", bundleName];
+				NSBundle *prefBundle;
+				NSString *bundleName = [entry objectForKey:@"bundle"];
+				NSString *bundlePath = [entry objectForKey:@"bundlePath"];
+				if(isController) {
+					// Second Try (bundlePath key failed)
+					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
+						bundlePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", bundleName];
 
-				// Third Try (/Library failed)
-				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
-					bundlePath = [NSString stringWithFormat:@"/System/Library/PreferenceBundles/%@.bundle", bundleName];
+					// Third Try (/Library failed)
+					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
+						bundlePath = [NSString stringWithFormat:@"/System/Library/PreferenceBundles/%@.bundle", bundleName];
 
-				// Really? (/System/Library failed...)
-				if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
-					NSLog(@"Discarding specifier for missing isController bundle %@.", bundleName);
-					continue;
+					// Really? (/System/Library failed...)
+					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+						NSLog(@"Discarding specifier for missing isController bundle %@.", bundleName);
+						continue;
+					}
+
+					prefBundle = [NSBundle bundleWithPath:bundlePath];
+				} else {
+					prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
 				}
+				NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
+				if([specs count] == 0) continue;
+				PSSpecifier *specifier = [specs objectAtIndex:0];
+				if(isController) {
+					[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
+				} else {
+					MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
+					[specifier setProperty:prefBundle forKey:PLBundleKey];
 
-				prefBundle = [NSBundle bundleWithPath:bundlePath];
-			} else {
-				prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
-			}
-			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
-			if([specs count] == 0) continue;
-			PSSpecifier *specifier = [specs objectAtIndex:0];
-			if(isController) {
-				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
-			} else {
-				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
-				[specifier setProperty:prefBundle forKey:PLBundleKey];
-
-				NSString *plistName = [[fullPath stringByDeletingPathExtension] lastPathComponent];
-				if(![[specifier propertyForKey:PSTitleKey] isEqualToString:plistName]) {
-					[specifier setProperty:plistName forKey:PLAlternatePlistNameKey];
+					NSString *plistName = [[fullPath stringByDeletingPathExtension] lastPathComponent];
+					if(![[specifier propertyForKey:PSTitleKey] isEqualToString:plistName]) {
+						[specifier setProperty:plistName forKey:PLAlternatePlistNameKey];
+					}
 				}
+				if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
+					[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
+				[_loadedSpecifiers addObject:specifier];
 			}
-			if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
-				[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
-			[_loadedSpecifiers addObject:specifier];
+
+			[_loadedSpecifiers sortUsingFunction:&PSSpecifierSort context:NULL];
 		}
-
-		[_loadedSpecifiers sortUsingFunction:&PSSpecifierSort context:NULL];
 
 		if([_loadedSpecifiers count] > 0) {
 			[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
