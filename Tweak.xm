@@ -148,6 +148,8 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
 			NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
 			NSDictionary *entry = [plPlist objectForKey:@"entry"];
+			if(!entry) continue;
+
 			NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
 
 			BOOL isController = [[entry objectForKey:@"isController"] boolValue];
