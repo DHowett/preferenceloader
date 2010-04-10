@@ -25,17 +25,22 @@ static NSString **pPSFooterTextGroupKey = NULL;
 @end
 /* }}} */
 
+/* {{{ Constants */
+static NSString *const PLBundleKey = @"pl_bundle";
+static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
+/* }}} */
+
 /* {{{ Preferences Controllers */
 @interface PLCustomListController: PSListController { }
 @end
 @implementation PLCustomListController
 - (id)bundle {
-	return [[self specifier] propertyForKey:@"pl_bundle"];
+	return [[self specifier] propertyForKey:PLBundleKey];
 }
 
 - (id)specifiers {
 	if(!_specifiers) {
-		NSString *alternatePlistName = [[self specifier] propertyForKey:@"pl_plist_name"];
+		NSString *alternatePlistName = [[self specifier] propertyForKey:PLAlternatePlistNameKey];
 		if(alternatePlistName)
 			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
 		else
@@ -195,12 +200,11 @@ static NSMutableArray *_loadedSpecifiers = [[NSMutableArray alloc] init];
 				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
 			} else {
 				MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
-				[specifier setProperty:prefBundle forKey:@"pl_bundle"];
+				[specifier setProperty:prefBundle forKey:PLBundleKey];
 
 				NSString *plistName = [[fullPath stringByDeletingPathExtension] lastPathComponent];
 				if(![[specifier propertyForKey:PSTitleKey] isEqualToString:plistName]) {
-					NSLog(@"Overriding %@ in favour of %@.", [specifier propertyForKey:PSTitleKey], plistName);
-					[specifier setProperty:plistName forKey:@"pl_plist_name"];
+					[specifier setProperty:plistName forKey:PLAlternatePlistNameKey];
 				}
 			}
 			if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
