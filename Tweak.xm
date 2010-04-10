@@ -183,13 +183,13 @@ static NSMutableArray *_loadedSpecifiers = nil;
 
 				NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
 
-				BOOL isController = [[entry objectForKey:@"isController"] boolValue];
+				BOOL isBundle = [entry objectForKey:@"bundle"] != nil;
 				BOOL isLocalizedBundle = ![[[fullPath stringByDeletingLastPathComponent] lastPathComponent] isEqualToString:@"Preferences"];
 
 				NSBundle *prefBundle;
 				NSString *bundleName = [entry objectForKey:@"bundle"];
 				NSString *bundlePath = [entry objectForKey:@"bundlePath"];
-				if(isController) {
+				if(isBundle) {
 					// Second Try (bundlePath key failed)
 					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath])
 						bundlePath = [NSString stringWithFormat:@"/Library/PreferenceBundles/%@.bundle", bundleName];
@@ -200,7 +200,7 @@ static NSMutableArray *_loadedSpecifiers = nil;
 
 					// Really? (/System/Library failed...)
 					if(![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
-						NSLog(@"Discarding specifier for missing isController bundle %@.", bundleName);
+						NSLog(@"Discarding specifier for missing isBundle bundle %@.", bundleName);
 						continue;
 					}
 
@@ -211,7 +211,7 @@ static NSMutableArray *_loadedSpecifiers = nil;
 				NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, NULL);
 				if([specs count] == 0) continue;
 				PSSpecifier *specifier = [specs objectAtIndex:0];
-				if(isController) {
+				if(isBundle) {
 					[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
 				} else {
 					MSHookIvar<Class>(specifier, "detailControllerClass") = isLocalizedBundle ? [PLLocalizedListController class] : [PLCustomListController class];
