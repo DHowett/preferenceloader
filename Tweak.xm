@@ -19,6 +19,10 @@ static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
 static NSString **pPSFooterTextGroupKey = NULL;
 /* }}} */
 
+/* {{{ Prototypes */
+static NSArray *generateErrorSpecifiersWithText(NSString *errorText);
+/* }}} */
+
 /* {{{ UIDevice 3.2 Additions */
 @interface UIDevice (iPad)
 - (BOOL)isWildcat;
@@ -45,6 +49,11 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
 		else
 			_specifiers = [super specifiers];
+		if(!_specifiers || [_specifiers count] == 0) {
+			[_specifiers release];
+			NSString *errorText = @"There appears to be an error with with these preferences!";
+			_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
+		}
 	}
 	return _specifiers;
 }
@@ -86,19 +95,7 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 - (id)specifiers {
 	if(!_specifiers) {
 		NSString *const errorText = [NSString stringWithFormat:@"There was an error loading the preference bundle for %@.", [[self specifier] name]];
-		NSMutableArray *newSpecifiers = [[NSMutableArray alloc] init];
-		if(pPSFooterTextGroupKey) {
-			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
-			[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
-			[newSpecifiers addObject:spec];
-		} else {
-			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
-			[spec setProperty:[NSNumber numberWithBool:YES] forKey:PSStaticTextGroupKey];
-			[newSpecifiers addObject:spec];
-			spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
-			[newSpecifiers addObject:spec];
-		}
-		_specifiers = newSpecifiers;
+		_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
 	}
 	return _specifiers;
 }
@@ -110,6 +107,22 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 	NSString *string1 = [a1 name];
 	NSString *string2 = [a2 name];
 	return [string1 localizedCaseInsensitiveCompare:string2];
+}
+
+static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
+	NSMutableArray *errorSpecifiers = [NSMutableArray array];
+	if(pPSFooterTextGroupKey) {
+		PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+		[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
+		[errorSpecifiers addObject:spec];
+	} else {
+		PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+		[spec setProperty:[NSNumber numberWithBool:YES] forKey:PSStaticTextGroupKey];
+		[errorSpecifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
+		[errorSpecifiers addObject:spec];
+	}
+	return errorSpecifiers;
 }
 /* }}} */
 
