@@ -168,10 +168,8 @@ static NSMutableArray *_loadedSpecifiers = nil;
 - (id)specifiers {
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
 	if(first) {
-		%orig;
-		int group, row;
-		[self getGroup:&group row:&row ofSpecifier:[self specifierForID:@"General"]];
 
+		%orig;
 		if(!_loadedSpecifiers) {
 			_loadedSpecifiers = [[NSMutableArray alloc] init];
 			NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
@@ -255,8 +253,13 @@ static NSMutableArray *_loadedSpecifiers = nil;
 		}
 
 		if([_loadedSpecifiers count] > 0) {
-			[self insertSpecifier:[PSSpecifier emptyGroupSpecifier] atEndOfGroup:group];
-			[self insertContiguousSpecifiers:_loadedSpecifiers atEndOfGroup:group+1];
+			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
+			int group, row;
+			if ([self getGroup:&group row:&row ofSpecifierID:@"General"])
+				[self insertSpecifier:groupSpecifier atEndOfGroup:group];
+			else
+				[self addSpecifier:groupSpecifier];
+			[self insertContiguousSpecifiers:_loadedSpecifiers afterSpecifier:groupSpecifier];
 		}
 	}
 	return MSHookIvar<id>(self, "_specifiers");
