@@ -12,3 +12,6 @@ TARGET_CC = $(SDKBINPATH)/gcc-4.0
 TARGET_CXX = $(SDKBINPATH)/gcc-4.0
 ADDITIONAL_CFLAGS = -I.
 endif
+
+internal-package::
+	$(FAKEROOT) chown -R 0:80 $(FW_PACKAGE_STAGING_DIR)
