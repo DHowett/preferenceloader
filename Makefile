@@ -1,5 +1,5 @@
 TWEAK_NAME = PreferenceLoader
-PreferenceLoader_OBJCC_FILES = Tweak.mm
+PreferenceLoader_LOGOS_FILES = Tweak.xm
 PreferenceLoader_FRAMEWORKS = UIKit
 PreferenceLoader_PRIVATE_FRAMEWORKS = Preferences
 
