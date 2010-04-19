@@ -1,11 +1,9 @@
-Package: net.howett.preferenceloader
+Package: preferenceloader
 Name: PreferenceLoader
 Depends: mobilesubstrate
-Provides: preferenceloader
-Replaces: preferenceloader
-Version: 0.0.1
+Version: 2.0
 Architecture: iphoneos-arm
-Description: 
+Description: load preferences in style
 Maintainer: Dustin Howett <dustin@howett.net>
 Author: Dustin Howett <dustin@howett.net>
 Section: System
