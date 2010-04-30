@@ -14,4 +14,5 @@ ADDITIONAL_CFLAGS = -I.
 endif
 
 internal-package::
+	find $(FW_STAGING_DIR) -iname '*.plist' -exec plutil -convert binary1 {} \;
 	$(FAKEROOT) chown -R 0:80 $(FW_PACKAGE_STAGING_DIR)
