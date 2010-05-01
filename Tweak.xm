@@ -146,20 +146,21 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 
 %hook PrefsListController
 static NSMutableArray *_loadedSpecifiers = nil;
+static int _extraPrefsGroupSectionID = 0;
 
 /* {{{ iPad Hooks */
 %group iPad
 - (NSString *)tableView:(id)view titleForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
-	if(section == groupCount - 2) return @"Extensions";
+	//int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
+	if(section == _extraPrefsGroupSectionID) return @"Extensions";
 	return %orig;
 }
 
 - (float)tableView:(id)view heightForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
-	if(section == groupCount - 2) return 22.0f;
+	//int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
+	if(section == _extraPrefsGroupSectionID) return 22.0f;
 	return %orig;
 }
 %end
@@ -260,6 +261,7 @@ static NSMutableArray *_loadedSpecifiers = nil;
 			else
 				[self addSpecifier:groupSpecifier];
 			[self insertContiguousSpecifiers:_loadedSpecifiers afterSpecifier:groupSpecifier];
+			[self getGroup:&_extraPrefsGroupSectionID row:&row ofSpecifier:groupSpecifier];
 		}
 	}
 	return MSHookIvar<id>(self, "_specifiers");
