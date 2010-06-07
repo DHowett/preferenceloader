@@ -5,6 +5,12 @@
 #import "PSKeys.h"
 #import <substrate.h>
 
+#if DEBUG
+#	define PLLog(...) NSLog(@"PreferenceLoader! %s:%d: %@", __FILE__, __LINE__, [NSString stringWithFormat:__VA_ARGS__])
+#else
+#	define PLLog(...)
+#endif
+
 /* {{{ Imports (Preferences.framework) */
 extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 					PSSpecifier* prevSpec,
