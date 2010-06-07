@@ -52,6 +52,7 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 
 - (id)specifiers {
 	if(!_specifiers) {
+		PLLog(@"loading specifiers for a custom bundle.");
 		NSString *alternatePlistName = [[self specifier] propertyForKey:PLAlternatePlistNameKey];
 		if(alternatePlistName)
 			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
@@ -83,6 +84,7 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 
 - (id)specifiers {
 	if(!_specifiers) {
+		PLLog(@"Localizing specifiers for a localized bundle.");
 		_specifiers = [super specifiers];
 		for(PSSpecifier *spec in _specifiers) {
 			if([spec name]) [spec setName:[[self bundle] localizedStringForKey:[spec name] value:[spec name] table:nil]];
@@ -109,6 +111,7 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 
 - (id)specifiers {
 	if(!_specifiers) {
+		PLLog(@"Generating error specifiers for a failed bundle :(");
 		NSString *const errorText = [NSString stringWithFormat:@"There was an error loading the preference bundle for %@.", [[self specifier] name]];
 		_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
 	}
@@ -147,6 +150,7 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
 	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
 	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
+		PLLog(@"lazyLoadBundle:%@ (bundle path %@) failed.", specifier, bundlePath);
 		NSLog(@"Failed to load PreferenceBundle at %@.", bundlePath);
 		MSHookIvar<Class>(specifier, "detailControllerClass") = [PLFailedBundleListController class];
 		[specifier removePropertyForKey:PSBundleIsControllerKey];
@@ -184,16 +188,19 @@ static int _extraPrefsGroupSectionID = 0;
 	bool first = (MSHookIvar<id>(self, "_specifiers") == nil);
 	if(first) {
 
+		PLLog(@"initial invocation for -specifiers");
 		%orig;
 		if(!_loadedSpecifiers) {
 			_loadedSpecifiers = [[NSMutableArray alloc] init];
 			NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:@"/Library/PreferenceLoader/Preferences" error:NULL];
 			for(NSString *item in subpaths) {
 				if(![[item pathExtension] isEqualToString:@"plist"]) continue;
+				PLLog(@"processing %@", item);
 				NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
 				NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
 				NSDictionary *entry = [plPlist objectForKey:@"entry"];
 				if(!entry) continue;
+				PLLog(@"found an entry key for %@!", item);
 
 				NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
 
@@ -219,13 +226,16 @@ static int _extraPrefsGroupSectionID = 0;
 						NSLog(@"Discarding specifier for missing isBundle bundle %@.", bundleName);
 						continue;
 					}
-
 					prefBundle = [NSBundle bundleWithPath:bundlePath];
+					PLLog(@"is a bundle: %@!", prefBundle);
 				} else {
 					prefBundle = [NSBundle bundleWithPath:[fullPath stringByDeletingLastPathComponent]];
+					PLLog(@"is NOT a bundle, so we're giving it %@!", prefBundle);
 				}
 
+				PLLog(@"loading specifiers!");
 				NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
+				PLLog(@"loaded specifiers!");
 
 				// If there are any PSBundleControllers, add them to our list.
 				if(bundleControllers) {
@@ -234,6 +244,7 @@ static int _extraPrefsGroupSectionID = 0;
 				}
 
 				if([specs count] == 0) continue;
+				PLLog(@"It's confirmed! There are Specifiers here, Captain!");
 
 				if(isBundle) {
 					 // Only set lazy-bundle for isController specifiers.
@@ -261,6 +272,7 @@ static int _extraPrefsGroupSectionID = 0;
 						[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
 					}
 
+				PLLog(@"appending to the array!");
 				[_loadedSpecifiers addObjectsFromArray:specs];
 			}
 
@@ -268,14 +280,21 @@ static int _extraPrefsGroupSectionID = 0;
 		}
 
 		if([_loadedSpecifiers count] > 0) {
+			PLLog(@"so we gots us some specifiers! that's awesome! let's add them to the list...");
 			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
 			int group, row;
-			if ([self getGroup:&group row:&row ofSpecifierID:@"General"])
+			if ([self getGroup:&group row:&row ofSpecifierID:@"General"]) {
+				PLLog(@"Adding a group specifier at the end of group %d", group);
 				[self insertSpecifier:groupSpecifier atEndOfGroup:group];
-			else
+			} else {
+				PLLog(@"Adding a group specifier at the end of entire list");
 				[self addSpecifier:groupSpecifier];
+			}
+			PLLog(@"Adding our specifiers after our newly minted group specifier %@", groupSpecifier);
 			[self insertContiguousSpecifiers:_loadedSpecifiers afterSpecifier:groupSpecifier];
+			PLLog(@"getting group index");
 			[self getGroup:&_extraPrefsGroupSectionID row:&row ofSpecifier:groupSpecifier];
+			PLLog(@"group index is %d", _extraPrefsGroupSectionID);
 		}
 	}
 	return MSHookIvar<id>(self, "_specifiers");
