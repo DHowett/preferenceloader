@@ -3,6 +3,7 @@
 #import <Preferences/PSBundleController.h>
 #import <Preferences/PSTableCell.h>
 #import "PSKeys.h"
+#import <substrate.h>
 
 /* {{{ Imports (Preferences.framework) */
 extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
@@ -54,6 +55,13 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 			[_specifiers release];
 			NSString *errorText = @"There appears to be an error with with these preferences!";
 			_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
+		} else {
+			for(PSSpecifier *spec in _specifiers) {
+				if(MSHookIvar<int>(spec, "cellType") == PSLinkCell && ![spec propertyForKey:PSBundlePathKey]) {
+					MSHookIvar<Class>(spec, "detailControllerClass") = [self class];
+					[spec setProperty:[[self specifier] propertyForKey:PLBundleKey] forKey:PLBundleKey];
+				}
+			}
 		}
 	}
 	return _specifiers;
