@@ -305,7 +305,7 @@ static int _extraPrefsGroupSectionID = 0;
 
 __attribute__((constructor)) static void _plInit() {
 	%init;
-	if([UIDevice instancesRespondToSelector:@selector(isWildcat)])
+	if([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 		%init(iPad);
 
 	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
