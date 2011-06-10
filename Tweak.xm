@@ -25,6 +25,7 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 // Weak (3.2+, dlsym)
 static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
 static NSString **pPSFooterTextGroupKey = NULL;
+static NSString **pPSStaticTextGroupKey = NULL;
 /* }}} */
 
 /* {{{ Prototypes */
@@ -134,11 +135,13 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 		[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
 		[errorSpecifiers addObject:spec];
 	} else {
-		PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
-		[spec setProperty:[NSNumber numberWithBool:YES] forKey:PSStaticTextGroupKey];
-		[errorSpecifiers addObject:spec];
-		spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
-		[errorSpecifiers addObject:spec];
+		if(pPSStaticTextGroupKey) {
+			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
+			[spec setProperty:[NSNumber numberWithBool:YES] forKey:*pPSStaticTextGroupKey];
+			[errorSpecifiers addObject:spec];
+			spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
+			[errorSpecifiers addObject:spec];
+		}
 	}
 	return errorSpecifiers;
 }
@@ -312,6 +315,7 @@ __attribute__((constructor)) static void _plInit() {
 	if(preferencesHandle) {
 		pPSTableCellUseEtchedAppearanceKey = (NSString **)dlsym(preferencesHandle, "PSTableCellUseEtchedAppearanceKey");
 		pPSFooterTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSFooterTextGroupKey");
+		pPSStaticTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSStaticTextGroupKey");
 		dlclose(preferencesHandle);
 	}
 }
