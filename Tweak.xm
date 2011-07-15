@@ -2,7 +2,6 @@
 #import <Preferences/PSListController.h>
 #import <Preferences/PSBundleController.h>
 #import <Preferences/PSTableCell.h>
-#import "PSKeys.h"
 #import <substrate.h>
 
 #if DEBUG
@@ -21,6 +20,13 @@ extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
 					NSString** pSpecifierID,
 					PSListController* callerList,
 					NSMutableArray** pBundleControllers);
+
+
+extern NSString *const PSBundlePathKey;
+extern NSString *const PSLazilyLoadedBundleKey;
+extern NSString *const PSBundleIsControllerKey;
+extern NSString *const PSActionKey;
+extern NSString *const PSTitleKey;
 
 // Weak (3.2+, dlsym)
 static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
