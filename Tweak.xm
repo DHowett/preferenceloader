@@ -312,7 +312,7 @@ static int _extraPrefsGroupSectionID = 0;
 %end
 /* }}} */
 
-__attribute__((constructor)) static void _plInit() {
+%ctor {
 	%init;
 	if([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 		%init(iPad);
