@@ -179,14 +179,12 @@ static int _extraPrefsGroupSectionID = 0;
 %group iPad
 - (NSString *)tableView:(id)view titleForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	//int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
 	if(section == _extraPrefsGroupSectionID) return @"Extensions";
 	return %orig;
 }
 
 - (float)tableView:(id)view heightForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	//int groupCount = [MSHookIvar<NSMutableArray *>(self, "_groups") count];
 	if(section == _extraPrefsGroupSectionID) return 22.0f;
 	return %orig;
 }
@@ -288,14 +286,14 @@ static int _extraPrefsGroupSectionID = 0;
 
 		if([_loadedSpecifiers count] > 0) {
 			PLLog(@"so we gots us some specifiers! that's awesome! let's add them to the list...");
-			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
+			PSSpecifier *groupSpecifier = [PSSpecifier groupSpecifierWithName:@"Extensions"];
 			[_loadedSpecifiers insertObject:groupSpecifier atIndex:0];
 			NSMutableArray *_specifiers = MSHookIvar<NSMutableArray *>(self, "_specifiers");
 			int group, row;
 			int firstindex;
 			if ([self getGroup:&group row:&row ofSpecifierID:@"General"]) {
 				firstindex = [self indexOfGroup:group] + [[self specifiersInGroup:group] count];
-				PLLog(@"Adding to the end of group %d at index %d", group, index);
+				PLLog(@"Adding to the end of group %d at index %d", group, firstindex);
 			} else {
 				firstindex = [_specifiers count];
 				PLLog(@"Adding to the end of entire list");
@@ -303,7 +301,13 @@ static int _extraPrefsGroupSectionID = 0;
 			NSIndexSet *indices = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(firstindex, [_loadedSpecifiers count])];
 			[_specifiers insertObjects:_loadedSpecifiers atIndexes:indices];
 			PLLog(@"getting group index");
-			[self getGroup:&_extraPrefsGroupSectionID row:&row ofSpecifier:groupSpecifier];
+			NSUInteger groupIndex = 0;
+			for(PSSpecifier *spec in _specifiers) {
+				if(MSHookIvar<int>(spec, "cellType") != PSGroupCell) continue;
+				if(spec == groupSpecifier) break;
+				++groupIndex;
+			}
+			_extraPrefsGroupSectionID = groupIndex;
 			PLLog(@"group index is %d", _extraPrefsGroupSectionID);
 		}
 	}
