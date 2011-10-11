@@ -103,6 +103,11 @@ static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 				}
 				[spec setTitleDictionary:newTitles];
 			}
+			if(pPSFooterTextGroupKey) {
+				NSString *value = [spec propertyForKey:*pPSFooterTextGroupKey];
+				if(value)
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:*pPSFooterTextGroupKey];
+			}
 		}
 	}
 	return _specifiers;
