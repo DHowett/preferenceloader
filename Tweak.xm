@@ -319,6 +319,21 @@ static int _extraPrefsGroupSectionID = 0;
 	return MSHookIvar<id>(self, "_specifiers");
 }
 %end
+
+%hook NSBundle
++ (NSBundle *)bundleWithPath:(NSString *)path {
+	NSString *newPath = nil;
+	NSRange sysRange = [path rangeOfString:@"/System/Library/PreferenceBundles" options:0];
+	if(sysRange.location != NSNotFound) {
+		newPath = [path stringByReplacingCharactersInRange:sysRange withString:@"/Library/PreferenceBundles"];
+	}
+	if(newPath && [[NSFileManager defaultManager] fileExistsAtPath:newPath]) {
+		// /Library/PreferenceBundles will override /System/Library/PreferenceBundles.
+		path = newPath;
+	}
+	return %orig;
+}
+%end
 /* }}} */
 
 %ctor {
