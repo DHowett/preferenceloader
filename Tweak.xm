@@ -29,9 +29,9 @@ extern NSString *const PSActionKey;
 extern NSString *const PSTitleKey;
 
 // Weak (3.2+, dlsym)
-static NSString **pPSTableCellUseEtchedAppearanceKey = NULL;
-static NSString **pPSFooterTextGroupKey = NULL;
-static NSString **pPSStaticTextGroupKey = NULL;
+extern NSString *const PSTableCellUseEtchedAppearanceKey;
+extern NSString *const PSFooterTextGroupKey;
+extern NSString *const PSStaticTextGroupKey;
 /* }}} */
 
 /* {{{ Prototypes */
@@ -107,10 +107,10 @@ static BOOL _Firmware_lt_60 = NO;
 				}
 				[spec setTitleDictionary:newTitles];
 			}
-			if(pPSFooterTextGroupKey) {
-				NSString *value = [spec propertyForKey:*pPSFooterTextGroupKey];
+			if(PSFooterTextGroupKey != NULL) {
+				NSString *value = [spec propertyForKey:PSFooterTextGroupKey];
 				if(value)
-					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:*pPSFooterTextGroupKey];
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:PSFooterTextGroupKey];
 			}
 		}
 	}
@@ -145,14 +145,14 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 
 static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 	NSMutableArray *errorSpecifiers = [NSMutableArray array];
-	if(pPSFooterTextGroupKey) {
+	if(PSFooterTextGroupKey != NULL) {
 		PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
-		[spec setProperty:errorText forKey:*pPSFooterTextGroupKey];
+		[spec setProperty:errorText forKey:PSFooterTextGroupKey];
 		[errorSpecifiers addObject:spec];
 	} else {
-		if(pPSStaticTextGroupKey) {
+		if(PSStaticTextGroupKey != NULL) {
 			PSSpecifier *spec = [PSSpecifier emptyGroupSpecifier];
-			[spec setProperty:[NSNumber numberWithBool:YES] forKey:*pPSStaticTextGroupKey];
+			[spec setProperty:[NSNumber numberWithBool:YES] forKey:PSStaticTextGroupKey];
 			[errorSpecifiers addObject:spec];
 			spec = [PSSpecifier preferenceSpecifierNamed:errorText target:nil set:nil get:nil detail:nil cell:[PSTableCell cellTypeFromString:@"PSTitleValueCell"] edit:nil];
 			[errorSpecifiers addObject:spec];
@@ -301,9 +301,9 @@ static int _extraPrefsGroupSectionID = 0;
 
 			// But it's possible for there to be more than one with an isController == 0 (PSBundleController) bundle.
 			// so, set all the specifiers to etched mode (if necessary).
-			if(pPSTableCellUseEtchedAppearanceKey && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
+			if(PSTableCellUseEtchedAppearanceKey != NULL && [UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 				for(PSSpecifier *specifier in specs) {
-					[specifier setProperty:[NSNumber numberWithBool:1] forKey:*pPSTableCellUseEtchedAppearanceKey];
+					[specifier setProperty:[NSNumber numberWithBool:1] forKey:PSTableCellUseEtchedAppearanceKey];
 				}
 
 			PLLog(@"appending to the array!");
@@ -370,13 +370,5 @@ static int _extraPrefsGroupSectionID = 0;
 	} else {
 		_Firmware_lt_60 = NO;
 		%init(Firmware_ge_60);
-	}
-
-	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
-	if(preferencesHandle) {
-		pPSTableCellUseEtchedAppearanceKey = (NSString **)dlsym(preferencesHandle, "PSTableCellUseEtchedAppearanceKey");
-		pPSFooterTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSFooterTextGroupKey");
-		pPSStaticTextGroupKey = (NSString **)dlsym(preferencesHandle, "PSStaticTextGroupKey");
-		dlclose(preferencesHandle);
 	}
 }

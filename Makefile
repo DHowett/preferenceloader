@@ -4,8 +4,8 @@ include framework/makefiles/common.mk
 TWEAK_NAME = PreferenceLoader
 PreferenceLoader_FILES = Tweak.xm
 PreferenceLoader_FRAMEWORKS = UIKit
-PreferenceLoader_PRIVATE_FRAMEWORKS = Preferences
-PreferenceLoader_CFLAGS = -I.
+PreferenceLoader_LDFLAGS = -F$(SYSROOT)/System/Library/PrivateFrameworks -weak_framework Preferences -undefined dynamic_lookup
+PreferenceLoader_CFLAGS = -F$(SYSROOT)/System/Library/PrivateFrameworks -I.
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
