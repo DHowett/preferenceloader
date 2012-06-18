@@ -49,6 +49,10 @@ static NSString *const PLBundleKey = @"pl_bundle";
 static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 /* }}} */
 
+/* {{{ Locals */
+static BOOL _Firmware_lt_60 = NO;
+/* }}} */
+
 /* {{{ Preferences Controllers */
 @interface PLCustomListController: PSListController { }
 @end
@@ -159,21 +163,40 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 /* }}} */
 
 /* {{{ Hooks */
+static void pl_loadFailedBundle(NSString *bundlePath, PSSpecifier *specifier) {
+	PLLog(@"lazyLoadBundle:%@ (bundle path %@) failed.", specifier, bundlePath);
+	NSLog(@"Failed to load PreferenceBundle at %@.", bundlePath);
+	MSHookIvar<Class>(specifier, "detailControllerClass") = [PLFailedBundleListController class];
+	[specifier removePropertyForKey:PSBundleIsControllerKey];
+	[specifier removePropertyForKey:PSActionKey];
+	[specifier removePropertyForKey:PSBundlePathKey];
+	[specifier removePropertyForKey:PSLazilyLoadedBundleKey];
+}
+
+%group Firmware_lt_60
 %hook PrefsRootController
 - (void)lazyLoadBundle:(PSSpecifier *)specifier {
 	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
 	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
 	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
-		PLLog(@"lazyLoadBundle:%@ (bundle path %@) failed.", specifier, bundlePath);
-		NSLog(@"Failed to load PreferenceBundle at %@.", bundlePath);
-		MSHookIvar<Class>(specifier, "detailControllerClass") = [PLFailedBundleListController class];
-		[specifier removePropertyForKey:PSBundleIsControllerKey];
-		[specifier removePropertyForKey:PSActionKey];
-		[specifier removePropertyForKey:PSBundlePathKey];
-		[specifier removePropertyForKey:PSLazilyLoadedBundleKey];
+		pl_loadFailedBundle(bundlePath, specifier);
 	}
 	[bundlePath release];
 }
+%end
+%end
+
+%group Firmware_ge_60
+%hook PrefsListController
+- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
+	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
+	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
+		pl_loadFailedBundle(bundlePath, specifier);
+	}
+	[bundlePath release];
+}
+%end
 %end
 
 %hook PrefsListController
@@ -245,7 +268,7 @@ static int _extraPrefsGroupSectionID = 0;
 			}
 
 			PLLog(@"loading specifiers!");
-			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, [self rootController], item, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
+			NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, _Firmware_lt_60 ? [self rootController] : self, item, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
 			PLLog(@"loaded specifiers!");
 
 			// If there are any PSBundleControllers, add them to our list.
@@ -291,12 +314,12 @@ static int _extraPrefsGroupSectionID = 0;
 
 		if([_loadedSpecifiers count] > 0) {
 			PLLog(@"so we gots us some specifiers! that's awesome! let's add them to the list...");
-			PSSpecifier *groupSpecifier = [PSSpecifier groupSpecifierWithName:@"Extensions"];
+			PSSpecifier *groupSpecifier = [PSSpecifier groupSpecifierWithName:_Firmware_lt_60 ? @"Extensions" : nil];
 			[_loadedSpecifiers insertObject:groupSpecifier atIndex:0];
 			NSMutableArray *_specifiers = MSHookIvar<NSMutableArray *>(self, "_specifiers");
 			int group, row;
 			int firstindex;
-			if ([self getGroup:&group row:&row ofSpecifierID:@"General"]) {
+			if ([self getGroup:&group row:&row ofSpecifierID:_Firmware_lt_60 ? @"General" : @"TWITTER"]) {
 				firstindex = [self indexOfGroup:group] + [[self specifiersInGroup:group] count];
 				PLLog(@"Adding to the end of group %d at index %d", group, firstindex);
 			} else {
@@ -340,6 +363,14 @@ static int _extraPrefsGroupSectionID = 0;
 	%init;
 	if([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 		%init(iPad);
+
+	if([%c(PrefsRootController) respondsToSelector:@selector(lazyLoadBundle:)]) {
+		_Firmware_lt_60 = YES;
+		%init(Firmware_lt_60);
+	} else {
+		_Firmware_lt_60 = NO;
+		%init(Firmware_ge_60);
+	}
 
 	void *preferencesHandle = dlopen("/System/Library/PrivateFrameworks/Preferences.framework/Preferences", RTLD_LAZY | RTLD_NOLOAD);
 	if(preferencesHandle) {
