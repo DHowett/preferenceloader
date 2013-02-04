@@ -36,6 +36,7 @@ static NSString **pPSStaticTextGroupKey = NULL;
 
 /* {{{ Prototypes */
 static NSArray *generateErrorSpecifiersWithText(NSString *errorText);
+static bool checkFilter(NSDictionary *filter);
 /* }}} */
 
 /* {{{ UIDevice 3.2 Additions */
@@ -46,6 +47,7 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText);
 
 /* {{{ Constants */
 static NSString *const PLBundleKey = @"pl_bundle";
+static NSString *const PLFilterKey = @"pl_filter";
 static NSString *const PLAlternatePlistNameKey = @"pl_alt_plist_name";
 /* }}} */
 
@@ -74,10 +76,21 @@ static BOOL _Firmware_lt_60 = NO;
 			NSString *errorText = @"There appears to be an error with with these preferences!";
 			_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
 		} else {
+			NSMutableArray *removals = [NSMutableArray array];
 			for(PSSpecifier *spec in _specifiers) {
 				if(MSHookIvar<int>(spec, "cellType") == PSLinkCell && ![spec propertyForKey:PSBundlePathKey]) {
 					MSHookIvar<Class>(spec, "detailControllerClass") = [self class];
 					[spec setProperty:[[self specifier] propertyForKey:PLBundleKey] forKey:PLBundleKey];
+				}
+
+				if(!checkFilter([spec propertyForKey:PLFilterKey]))
+					[removals addObject:spec];
+
+				if(removals.count > 0) {
+					NSMutableArray *newSpecifiers = [_specifiers mutableCopy];
+					[_specifiers release];
+					[newSpecifiers removeObjectsInArray:removals];
+					_specifiers = newSpecifiers;
 				}
 			}
 		}
@@ -160,6 +173,23 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 	}
 	return errorSpecifiers;
 }
+
+static bool checkFilter(NSDictionary *filter) {
+	if(!filter) return true;
+	bool valid = true;
+
+	PLLog(@"Checking filter %@", filter);
+
+	NSArray *coreFoundationVersion = [filter objectForKey:@"CoreFoundationVersion"];
+	if(coreFoundationVersion && coreFoundationVersion.count > 0) {
+		NSNumber *lowerBound = [coreFoundationVersion objectAtIndex:0];
+		NSNumber *upperBound = coreFoundationVersion.count > 1 ? [coreFoundationVersion objectAtIndex:1] : nil;
+		PLLog(@"%@ <= CF Version (%f) < %@", lowerBound, kCFCoreFoundationVersionNumber, upperBound);
+		valid = valid && (kCFCoreFoundationVersionNumber >= lowerBound.floatValue) && (upperBound ? (kCFCoreFoundationVersionNumber < upperBound.floatValue) : true);
+	}
+	PLLog(valid ? @"Filter matched" : @"Filter did not match");
+	return valid;
+}
 /* }}} */
 
 /* {{{ Hooks */
@@ -232,6 +262,8 @@ static int _extraPrefsGroupSectionID = 0;
 			PLLog(@"processing %@", item);
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
 			NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
+			if(!checkFilter([plPlist objectForKey:@"filter"])) continue;
+
 			NSDictionary *entry = [plPlist objectForKey:@"entry"];
 			if(!entry) continue;
 			PLLog(@"found an entry key for %@!", item);
