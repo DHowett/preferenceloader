@@ -207,13 +207,13 @@ static int _extraPrefsGroupSectionID = 0;
 %group iPad
 - (NSString *)tableView:(id)view titleForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	if(section == _extraPrefsGroupSectionID) return @"Extensions";
+	if(section == _extraPrefsGroupSectionID) return _Firmware_lt_60 ? @"Extensions" : NULL;
 	return %orig;
 }
 
 - (float)tableView:(id)view heightForHeaderInSection:(int)section {
 	if([_loadedSpecifiers count] == 0) return %orig;
-	if(section == _extraPrefsGroupSectionID) return 22.0f;
+	if(section == _extraPrefsGroupSectionID) return _Firmware_lt_60 ? 22.0f : 10.f;
 	return %orig;
 }
 %end
