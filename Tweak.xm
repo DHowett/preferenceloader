@@ -268,6 +268,8 @@ static int _extraPrefsGroupSectionID = 0;
 			if(!entry) continue;
 			PLLog(@"found an entry key for %@!", item);
 
+			if(!checkFilter([entry objectForKey:PLFilterKey])) continue;
+
 			NSDictionary *specifierPlist = [NSDictionary dictionaryWithObjectsAndKeys:[NSArray arrayWithObjects:entry, nil], @"items", nil];
 
 			BOOL isBundle = [entry objectForKey:@"bundle"] != nil;
