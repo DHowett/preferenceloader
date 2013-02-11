@@ -262,7 +262,7 @@ static int _extraPrefsGroupSectionID = 0;
 			PLLog(@"processing %@", item);
 			NSString *fullPath = [NSString stringWithFormat:@"/Library/PreferenceLoader/Preferences/%@", item];
 			NSDictionary *plPlist = [NSDictionary dictionaryWithContentsOfFile:fullPath];
-			if(!checkFilter([plPlist objectForKey:@"filter"]) || !checkFilter([plPlist objectForKey:PLFilterKey])) continue;
+			if(!checkFilter([plPlist objectForKey:@"filter"] ?: [plPlist objectForKey:PLFilterKey])) continue;
 
 			NSDictionary *entry = [plPlist objectForKey:@"entry"];
 			if(!entry) continue;
