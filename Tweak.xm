@@ -175,10 +175,10 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 }
 
 static bool checkFilter(NSDictionary *filter) {
+	PLLog(@"Checking filter %@", filter);
+
 	if(!filter) return true;
 	bool valid = true;
-
-	PLLog(@"Checking filter %@", filter);
 
 	NSArray *coreFoundationVersion = [filter objectForKey:@"CoreFoundationVersion"];
 	if(coreFoundationVersion && coreFoundationVersion.count > 0) {
