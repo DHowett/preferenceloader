@@ -203,15 +203,23 @@ static void pl_loadFailedBundle(NSString *bundlePath, PSSpecifier *specifier) {
 	[specifier removePropertyForKey:PSLazilyLoadedBundleKey];
 }
 
-%group Firmware_lt_60
-%hook PrefsRootController
-- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, void(*_orig)(id, SEL, PSSpecifier *)) {
 	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
-	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
+	PLLog(@"In pl_lazyLoadBundleCore for %@ (%s), specifier %@", self, _cmd, specifier);
+	PLLog(@"%%orig is %p.", _orig);
+
+	_orig(self, _cmd, specifier); // NB: This removes the PSLazilyLoadedBundleKey property.
 	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
 		pl_loadFailedBundle(bundlePath, specifier);
 	}
 	[bundlePath release];
+}
+
+%group Firmware_lt_60
+%hook PrefsRootController
+- (void)lazyLoadBundle:(PSSpecifier *)specifier {
+	pl_lazyLoadBundleCore(self, _cmd, specifier, &%orig);
+
 }
 %end
 %end
@@ -219,12 +227,7 @@ static void pl_loadFailedBundle(NSString *bundlePath, PSSpecifier *specifier) {
 %group Firmware_ge_60
 %hook PrefsListController
 - (void)lazyLoadBundle:(PSSpecifier *)specifier {
-	NSString *bundlePath = [[specifier propertyForKey:PSLazilyLoadedBundleKey] retain];
-	%orig; // NB: This removes the PSLazilyLoadedBundleKey property.
-	if(![[NSBundle bundleWithPath:bundlePath] isLoaded]) {
-		pl_loadFailedBundle(bundlePath, specifier);
-	}
-	[bundlePath release];
+	pl_lazyLoadBundleCore(self, _cmd, specifier, &%orig);
 }
 %end
 %end
