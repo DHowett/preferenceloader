@@ -398,7 +398,7 @@ static int _extraPrefsGroupSectionID = 0;
 	if([UIDevice instancesRespondToSelector:@selector(isWildcat)] && [[UIDevice currentDevice] isWildcat])
 		%init(iPad);
 
-	if([%c(PrefsRootController) respondsToSelector:@selector(lazyLoadBundle:)]) {
+	if(kCFCoreFoundationVersionNumber < 793.00) {
 		_Firmware_lt_60 = YES;
 		%init(Firmware_lt_60);
 	} else {
