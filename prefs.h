@@ -8,6 +8,7 @@ extern NSString *const PLFilterKey;
 
 @interface PSSpecifier (libprefs)
 + (BOOL)environmentPassesPreferenceLoaderFilter:(NSDictionary *)filter;
+@property (nonatomic, retain, readonly) NSBundle *preferenceLoaderBundle;
 @end
 
 @interface PLCustomListController: PSListController { }

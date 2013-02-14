@@ -52,7 +52,7 @@ static BOOL _Firmware_lt_60 = NO;
 /* {{{ Preferences Controllers */
 @implementation PLCustomListController
 - (id)bundle {
-	return [[self specifier] propertyForKey:PLBundleKey];
+	return [[self specifier] preferenceLoaderBundle];
 }
 
 - (id)specifiers {
@@ -175,6 +175,11 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 	PLLog(valid ? @"Filter matched" : @"Filter did not match");
 	return valid;
 }
+
+- (NSBundle *)preferenceLoaderBundle {
+	return [self propertyForKey:PLBundleKey];
+}
+
 @end
 /* }}} */
 
@@ -286,6 +291,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 		if([[entry objectForKey:@"isController"] boolValue]) {
 			for(PSSpecifier *specifier in specs) {
 				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
+				[specifier setProperty:[NSBundle bundleWithPath:sourceBundlePath] forKey:PLBundleKey];
 			}
 		}
 	} else {
