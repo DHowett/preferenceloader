@@ -58,14 +58,19 @@ static BOOL _Firmware_lt_60 = NO;
 - (id)specifiers {
 	if(!_specifiers) {
 		PLLog(@"loading specifiers for a custom bundle.");
-		NSString *alternatePlistName = [[self specifier] propertyForKey:PLAlternatePlistNameKey];
+		PSSpecifier *specifier = [self specifier];
+		if(!specifier) {
+			NSString *errorText = @"There appears to have been an error restoring these preferences!";
+			return _specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
+		}
+		NSString *alternatePlistName = [specifier propertyForKey:PLAlternatePlistNameKey];
 		if(alternatePlistName)
 			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
 		else
 			_specifiers = [super specifiers];
 		if(!_specifiers || [_specifiers count] == 0) {
 			[_specifiers release];
-			NSString *errorText = @"There appears to be an error with with these preferences!";
+			NSString *errorText = @"There appears to be an error with these preferences!";
 			_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
 		} else {
 			if([self respondsToSelector:@selector(setTitle:)]) {
