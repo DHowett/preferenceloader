@@ -68,6 +68,9 @@ static BOOL _Firmware_lt_60 = NO;
 			NSString *errorText = @"There appears to be an error with with these preferences!";
 			_specifiers = [[NSArray alloc] initWithArray:generateErrorSpecifiersWithText(errorText)];
 		} else {
+			if([self respondsToSelector:@selector(setTitle:)]) {
+				[self setTitle:specifier.name];
+			}
 			NSMutableArray *removals = [NSMutableArray array];
 			for(PSSpecifier *spec in _specifiers) {
 				if(MSHookIvar<int>(spec, "cellType") == PSLinkCell && ![spec propertyForKey:PSBundlePathKey]) {
@@ -89,11 +92,17 @@ static BOOL _Firmware_lt_60 = NO;
 	}
 	return _specifiers;
 }
+
+- (id)navigationTitle {
+	return self.specifier.name;
+}
+
 @end
 
 @implementation PLLocalizedListController
 - (id)navigationTitle {
-	return [[self bundle] localizedStringForKey:[super navigationTitle] value:[super navigationTitle] table:nil];
+	NSString *original = [super navigationTitle];
+	return [[self bundle] localizedStringForKey:original value:original table:nil];
 }
 
 - (id)specifiers {
@@ -292,6 +301,9 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 			for(PSSpecifier *specifier in specs) {
 				[specifier setProperty:bundlePath forKey:PSLazilyLoadedBundleKey];
 				[specifier setProperty:[NSBundle bundleWithPath:sourceBundlePath] forKey:PLBundleKey];
+				if(!specifier.name) {
+					specifier.name = title;
+				}
 			}
 		}
 	} else {
@@ -302,8 +314,12 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 
 		if(![[specifier propertyForKey:PSTitleKey] isEqualToString:title]) {
 			[specifier setProperty:title forKey:PLAlternatePlistNameKey];
+			if(!specifier.name) {
+				specifier.name = title;
+			}
 		}
 	}
+
 	return specs;
 }
 
