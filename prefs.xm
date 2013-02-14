@@ -65,7 +65,7 @@ static BOOL _Firmware_lt_60 = NO;
 		}
 		NSString *alternatePlistName = [specifier propertyForKey:PLAlternatePlistNameKey];
 		if(alternatePlistName)
-			_specifiers = [[super loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
+			_specifiers = [[self loadSpecifiersFromPlistName:alternatePlistName target:self] retain];
 		else
 			_specifiers = [super specifiers];
 		if(!_specifiers || [_specifiers count] == 0) {
@@ -230,11 +230,33 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 %end
 
 %group Firmware_ge_60
-%hook PrefsListController
+%hook PSListController
 - (void)lazyLoadBundle:(PSSpecifier *)specifier {
 	pl_lazyLoadBundleCore(self, _cmd, specifier, &%orig);
 }
 %end
+%end
+
+%hook PSListController
+- (NSArray *)loadSpecifiersFromPlistName:(NSString *)plistName target:(id)target {
+	NSArray *result = %orig();
+	if([result count] > 0)
+		return result;
+
+	NSDictionary *properties = self.specifier.properties;
+	if(!properties)
+		return nil;
+
+	NSArray *bundleControllers = [[NSArray alloc] init];
+	result = SpecifiersFromPlist(properties, nil, _Firmware_lt_60 ? [self rootController] : self, plistName, [self bundle], NULL, NULL, self, &bundleControllers);
+	// If there are any PSBundleControllers, add them to our list.
+	if(bundleControllers) {
+		[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
+		[bundleControllers release];
+	}
+
+	return result;
+}
 %end
 
 %hook NSBundle
