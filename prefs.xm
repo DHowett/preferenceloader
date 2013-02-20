@@ -229,15 +229,13 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 %end
 %end
 
-%group Firmware_ge_60
 %hook PSListController
+%group Firmware_ge_60
 - (void)lazyLoadBundle:(PSSpecifier *)specifier {
 	pl_lazyLoadBundleCore(self, _cmd, specifier, &%orig);
 }
 %end
-%end
 
-%hook PSListController
 - (NSArray *)loadSpecifiersFromPlistName:(NSString *)plistName target:(id)target {
 	NSArray *result = %orig();
 	if([result count] > 0)
