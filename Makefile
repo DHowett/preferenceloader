@@ -1,4 +1,4 @@
-export TARGET=iphone:latest:2.0
+export TARGET=iphone:2.0:2.0
 include framework/makefiles/common.mk
 
 TWEAK_NAME = PreferenceLoader
