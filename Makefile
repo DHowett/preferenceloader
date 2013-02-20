@@ -23,6 +23,10 @@ PreferenceLoader_LDFLAGS = -L$(THEOS_OBJ_DIR)
 include $(THEOS_MAKE_PATH)/library.mk
 include $(THEOS_MAKE_PATH)/tweak.mk
 
+after-libprefs-stage::
+	$(ECHO_NOTHING)mkdir -p $(THEOS_STAGING_DIR)/usr/include/libprefs$(ECHO_END)
+	$(ECHO_NOTHING)cp prefs.h $(THEOS_STAGING_DIR)/usr/include/libprefs/prefs.h$(ECHO_END)
+
 after-stage::
 	find $(THEOS_STAGING_DIR) -iname '*.plist' -exec plutil -convert binary1 {} \;
 	$(FAKEROOT) chown -R 0:80 $(THEOS_STAGING_DIR)
