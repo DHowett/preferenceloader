@@ -2,6 +2,7 @@ export TARGET=iphone:2.0:2.0
 include framework/makefiles/common.mk
 
 LIBRARY_NAME = libprefs
+libprefs_LOGOSFLAGS = -c generator=internal
 libprefs_FILES = prefs.xm
 libprefs_FRAMEWORKS = UIKit
 libprefs_PRIVATE_FRAMEWORKS = Preferences
