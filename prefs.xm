@@ -247,13 +247,13 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	if(!properties)
 		return nil;
 
-	NSArray *bundleControllers = [[NSArray alloc] init];
+	NSArray *bundleControllers = [[NSMutableArray alloc] init];
 	result = SpecifiersFromPlist(properties, nil, _Firmware_lt_60 ? [self rootController] : self, plistName, [self bundle], NULL, NULL, self, &bundleControllers);
 	// If there are any PSBundleControllers, add them to our list.
-	if(bundleControllers) {
+	if(bundleControllers.count > 0) {
 		[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
-		[bundleControllers release];
 	}
+	[bundleControllers release];
 
 	return result;
 }
@@ -286,7 +286,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	NSBundle *prefBundle;
 	NSString *bundleName = [entry objectForKey:@"bundle"];
 	NSString *bundlePath = [entry objectForKey:@"bundlePath"];
-	NSArray *bundleControllers = [[NSArray alloc] init];
+	NSArray *bundleControllers = [[NSMutableArray alloc] init];
 
 	if(isBundle) {
 		// Second Try (bundlePath key failed)
@@ -314,10 +314,10 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	PLLog(@"loaded specifiers!");
 
 	// If there are any PSBundleControllers, add them to our list.
-	if(bundleControllers) {
+	if(bundleControllers.count > 0) {
 		[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
-		[bundleControllers release];
 	}
+	[bundleControllers release];
 
 	if([specs count] == 0) return nil;
 	PLLog(@"It's confirmed! There are Specifiers here, Captain!");
