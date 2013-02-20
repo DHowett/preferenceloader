@@ -348,13 +348,12 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 @end
 
 %ctor {
+	_Firmware_lt_60 = kCFCoreFoundationVersionNumber < 793.00;
 	%init;
 
-	if(kCFCoreFoundationVersionNumber < 793.00) {
-		_Firmware_lt_60 = YES;
+	if(_Firmware_lt_60) {
 		%init(Firmware_lt_60);
 	} else {
-		_Firmware_lt_60 = NO;
 		%init(Firmware_ge_60);
 	}
 
