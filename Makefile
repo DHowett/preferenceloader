@@ -7,6 +7,10 @@ libprefs_FILES = prefs.xm
 libprefs_FRAMEWORKS = UIKit
 libprefs_PRIVATE_FRAMEWORKS = Preferences
 libprefs_CFLAGS = -I.
+libprefs_COMPATIBILITY_VERSION = 2.2.0
+libprefs_LIBRARY_VERSION = $(shell echo "$(THEOS_PACKAGE_BASE_VERSION)" | cut -d'~' -f1)
+libprefs_LDFLAGS  = -compatibility_version $($(THEOS_CURRENT_INSTANCE)_COMPATIBILITY_VERSION)
+libprefs_LDFLAGS += -current_version $($(THEOS_CURRENT_INSTANCE)_LIBRARY_VERSION)
 
 TWEAK_NAME = PreferenceLoader
 PreferenceLoader_FILES = Tweak.xm
