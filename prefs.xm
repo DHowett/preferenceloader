@@ -6,11 +6,8 @@
 
 #import "prefs.h"
 
-#if DEBUG
-#	define PLLog(...) NSLog(@"libprefs! %s:%d: %@", __FILE__, __LINE__, [NSString stringWithFormat:__VA_ARGS__])
-#else
-#	define PLLog(...)
-#endif
+#define DEBUG_TAG "libprefs"
+#import "debug.h"
 
 /* {{{ Imports (Preferences.framework) */
 extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,

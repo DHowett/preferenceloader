@@ -3,11 +3,8 @@
 
 #import "prefs.h"
 
-#if DEBUG
-#	define PLLog(...) NSLog(@"PreferenceLoader! %s:%d: %@", __FILE__, __LINE__, [NSString stringWithFormat:__VA_ARGS__])
-#else
-#	define PLLog(...)
-#endif
+#define DEBUG_TAG "PreferenceLoader"
+#import "debug.h"
 
 /* {{{ Imports (Preferences.framework) */
 // Weak (3.2+, dlsym)
