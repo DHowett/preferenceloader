@@ -181,7 +181,10 @@ static NSArray *generateErrorSpecifiersWithText(NSString *errorText) {
 		NSNumber *lowerBound = [coreFoundationVersion objectAtIndex:0];
 		NSNumber *upperBound = coreFoundationVersion.count > 1 ? [coreFoundationVersion objectAtIndex:1] : nil;
 		PLLog(@"%@ <= CF Version (%f) < %@", lowerBound, kCFCoreFoundationVersionNumber, upperBound);
-		valid = valid && (kCFCoreFoundationVersionNumber >= lowerBound.floatValue) && (upperBound ? (kCFCoreFoundationVersionNumber < upperBound.floatValue) : true);
+		valid = valid && (kCFCoreFoundationVersionNumber >= lowerBound.floatValue);
+
+		if(upperBound)
+			valid = valid && (kCFCoreFoundationVersionNumber < upperBound.floatValue);
 	}
 	PLLog(valid ? @"Filter matched" : @"Filter did not match");
 	return valid;
