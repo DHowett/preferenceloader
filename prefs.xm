@@ -242,13 +242,17 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	if(!properties)
 		return nil;
 
-	NSArray *bundleControllers = [[NSMutableArray alloc] init];
-	result = SpecifiersFromPlist(properties, nil, _Firmware_lt_60 ? [self rootController] : self, plistName, [self bundle], NULL, NULL, self, &bundleControllers);
-	// If there are any PSBundleControllers, add them to our list.
-	if(bundleControllers.count > 0) {
-		[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
-	}
-	[bundleControllers release];
+	PLLog(@"Loading specifiers from PSListController's specifier's properties.");
+	NSArray *&bundleControllers = MSHookIvar<NSArray *>(self, "_bundleControllers");
+	NSString *title = nil;
+	NSString *specifierID = nil;
+	result = SpecifiersFromPlist(properties, [self specifier], MSHookIvar<id>([self specifier], "target"), plistName, [self bundle], &title, &specifierID, self, &bundleControllers);
+
+	if(title)
+		[self setTitle:title];
+
+	if(specifierID)
+		[self setSpecifierID:specifierID];
 
 	return result;
 }
@@ -281,7 +285,6 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	NSBundle *prefBundle;
 	NSString *bundleName = [entry objectForKey:@"bundle"];
 	NSString *bundlePath = [entry objectForKey:@"bundlePath"];
-	NSArray *bundleControllers = [[NSMutableArray alloc] init];
 
 	if(isBundle) {
 		// Second Try (bundlePath key failed)
@@ -305,14 +308,9 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	}
 
 	PLLog(@"loading specifiers!");
+	NSArray *&bundleControllers = MSHookIvar<NSArray *>(self, "_bundleControllers");
 	NSArray *specs = SpecifiersFromPlist(specifierPlist, nil, _Firmware_lt_60 ? [self rootController] : self, title, prefBundle, NULL, NULL, (PSListController*)self, &bundleControllers);
 	PLLog(@"loaded specifiers!");
-
-	// If there are any PSBundleControllers, add them to our list.
-	if(bundleControllers.count > 0) {
-		[MSHookIvar<NSMutableArray *>(self, "_bundleControllers") addObjectsFromArray:bundleControllers];
-	}
-	[bundleControllers release];
 
 	if([specs count] == 0) return nil;
 	PLLog(@"It's confirmed! There are Specifiers here, Captain!");
