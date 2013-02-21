@@ -246,7 +246,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	NSArray *&bundleControllers = MSHookIvar<NSArray *>(self, "_bundleControllers");
 	NSString *title = nil;
 	NSString *specifierID = nil;
-	result = SpecifiersFromPlist(properties, [self specifier], MSHookIvar<id>([self specifier], "target"), plistName, [self bundle], &title, &specifierID, self, &bundleControllers);
+	result = SpecifiersFromPlist(properties, [self specifier], target, plistName, [self bundle], &title, &specifierID, self, &bundleControllers);
 
 	if(title)
 		[self setTitle:title];
