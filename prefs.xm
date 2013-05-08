@@ -129,6 +129,12 @@ static BOOL _Firmware_lt_60 = NO;
 				}
 				[spec setShortTitleDictionary:newTitles];
 			}
+			static NSString *localizableKeys[] = { @"headerDetailText", @"placeholder", @"staticTextMessage" };
+			for (size_t i = 0; i < sizeof(localizableKeys) / sizeof(NSString *); i++) {
+				NSString *value = [spec propertyForKey:localizableKeys[i]];
+				if(value)
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:localizableKeys[i]];
+			}
 			if(pPSFooterTextGroupKey) {
 				NSString *value = [spec propertyForKey:*pPSFooterTextGroupKey];
 				if(value)
