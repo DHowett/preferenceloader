@@ -121,6 +121,20 @@ static BOOL _Firmware_lt_60 = NO;
 				}
 				[spec setTitleDictionary:newTitles];
 			}
+			if([spec shortTitleDictionary]) {
+				NSMutableDictionary *newTitles = [NSMutableDictionary dictionary];
+				for(NSString *key in [spec shortTitleDictionary]) {
+					NSString *value = [[spec shortTitleDictionary] objectForKey:key];
+					[newTitles setObject:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:key];
+				}
+				[spec setShortTitleDictionary:newTitles];
+			}
+			static NSString *localizableKeys[] = { @"headerDetailText", @"placeholder", @"staticTextMessage" };
+			for (size_t i = 0; i < sizeof(localizableKeys) / sizeof(NSString *); i++) {
+				NSString *value = [spec propertyForKey:localizableKeys[i]];
+				if(value)
+					[spec setProperty:[[self bundle] localizedStringForKey:value value:value table:nil] forKey:localizableKeys[i]];
+			}
 			if(pPSFooterTextGroupKey) {
 				NSString *value = [spec propertyForKey:*pPSFooterTextGroupKey];
 				if(value)
