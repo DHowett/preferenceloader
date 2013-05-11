@@ -32,6 +32,18 @@ static NSString **pPSFooterTextGroupKey = NULL;
 static NSString **pPSStaticTextGroupKey = NULL;
 /* }}} */
 
+/* {{{ PSSpecifier 3.2 Additions */
+@interface PSSpecifier (OS32)
+- (Class)detailControllerClass;
+@end
+/* }}} */
+
+/* {{{ PSViewController 3.2 Additions */
+@interface PSViewController (OS32)
+- (void)setSpecifier:(PSSpecifier *)specifier;
+@end
+/* }}} */
+
 /* {{{ Prototypes */
 static NSArray *generateErrorSpecifiersWithText(NSString *errorText);
 /* }}} */
@@ -249,6 +261,32 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	pl_lazyLoadBundleCore(self, _cmd, specifier, &%orig);
 }
 %end
+
+%new
+- (PSViewController *)controllerForSpecifier:(PSSpecifier *)specifier
+{
+	%log();
+	Class detailClass = [specifier respondsToSelector:@selector(detailControllerClass)] ? [specifier detailControllerClass] : MSHookIvar<Class>(specifier, "detailControllerClass");
+	if (!detailClass)
+		detailClass = [PLCustomListController class];
+	if (![detailClass isSubclassOfClass:[PSViewController class]])
+		return nil;
+	id result = [detailClass alloc];
+	if ([result respondsToSelector:@selector(initForContentSize:)])
+		result = [result initForContentSize:[[self view] bounds].size];
+	else
+		result = [result init];
+	[result setRootController:self.rootController];
+	[result setParentController:self];
+	if ([result respondsToSelector:@selector(setSpecifier:)])
+		[result setSpecifier:specifier];
+	else if ([result isKindOfClass:[PSListController class]]) {
+		NSArray *&_specifierIvar = MSHookIvar<NSArray *>(result, "_specifier");
+		[_specifierIvar release];
+		_specifierIvar = [specifier retain];
+	}
+	return [result autorelease];
+}
 
 - (NSArray *)loadSpecifiersFromPlistName:(NSString *)plistName target:(id)target {
 	NSArray *result = %orig();
