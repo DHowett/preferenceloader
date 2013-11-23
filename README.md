@@ -15,3 +15,6 @@ I personally found this necessary, as there were various things about the existi
 * error recovery (loading a bad bundle results in a simple "There was an error loading ..." instead of a blank preferences panel)
 * cleaner design
 * iPhoneOS 3.2 and iPad compatibility.
+
+### License ###
+PreferenceLoader is made available under the provisions of the GNU Lesser General Public License (LGPL), version 3.
